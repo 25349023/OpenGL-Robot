@@ -1,23 +1,22 @@
 #include "../Include/Common.h"
 
-GLubyte timer_cnt = 0;
-bool timer_enabled = true;
-unsigned int timer_speed = 16;
-
 using namespace glm;
 
-int program_idx = 0;
+//GLubyte timer_cnt = 0;
+//bool timer_enabled = true;
+//unsigned int timer_speed = 16;
+
+//int program_idx = 0;
 
 mat4 mvp(1.0f);
-GLuint um4mvp_circular, um4mvp_checked;
-GLuint m_time_circular, m_time_checked;
+mat4 model(1.0f), view(1.0f), projection(1.0f);
 
-GLuint screen_center_circular;
+//GLuint um4mvp_circular;
+//GLuint m_time_circular;
 
-GLuint program_circular;
-GLuint program_checked;
+GLuint program;
 
-GLuint programs[2];
+//GLuint programs[2];
 
 char** loadShaderSource(const char* file)
 {
@@ -30,6 +29,8 @@ char** loadShaderSource(const char* file)
 	src[sz] = '\0';
 	char** srcp = new char* [1];
 	srcp[0] = src;
+	fclose(fp);
+
 	return srcp;
 }
 
@@ -45,59 +46,41 @@ void My_Init()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-//	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-//	GLuint fragmentCircularShader = glCreateShader(GL_FRAGMENT_SHADER);
-//	GLuint fragmentCheckedShader = glCreateShader(GL_FRAGMENT_SHADER);
-//	char** vertexShaderSource = loadShaderSource("vertex.vs.glsl");
-//	char** fragmentCircularShaderSource = loadShaderSource("fragment_circular.fs.glsl");
-//	char** fragmentCheckedShaderSource = loadShaderSource("fragment_checked.fs.glsl");
-//	glShaderSource(vertexShader, 1, vertexShaderSource, NULL);
-//	glShaderSource(fragmentCircularShader, 1, fragmentCircularShaderSource, NULL);
-//	glShaderSource(fragmentCheckedShader, 1, fragmentCheckedShaderSource, NULL);
-//	freeShaderSource(vertexShaderSource);
-//	freeShaderSource(fragmentCircularShaderSource);
-//	freeShaderSource(fragmentCheckedShaderSource);
-//
-//	glCompileShader(vertexShader);
-//	glCompileShader(fragmentCircularShader);
-//	glCompileShader(fragmentCheckedShader);
-//	shaderLog(vertexShader);
-//	shaderLog(fragmentCircularShader);
-//	shaderLog(fragmentCheckedShader);
-//
-//	program_circular = glCreateProgram();
-//	glAttachShader(program_circular, vertexShader);
-//	glAttachShader(program_circular, fragmentCircularShader);
-//	glLinkProgram(program_circular);
+	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	char** vertexShaderSource = loadShaderSource("vertex.vs.glsl");
+	char** fragmentShaderSource = loadShaderSource("fragment.fs.glsl");
+	glShaderSource(vertexShader, 1, vertexShaderSource, NULL);
+	glShaderSource(fragmentShader, 1, fragmentShaderSource, NULL);
+	freeShaderSource(vertexShaderSource);
+	freeShaderSource(fragmentShaderSource);
+
+	glCompileShader(vertexShader);
+	glCompileShader(fragmentShader);
+	printGLShaderLog(vertexShader);
+	printGLShaderLog(fragmentShader);
+
+	program = glCreateProgram();
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
 //	um4mvp_circular = glGetUniformLocation(program_circular, "um4mvp");
 //	m_time_circular = glGetUniformLocation(program_circular, "time");
 //	screen_center_circular = glGetUniformLocation(program_circular, "screenCenter");
-//	glUseProgram(program_circular);
+	glUseProgram(program);
 //	programs[0] = program_circular;
-//
-//	program_checked = glCreateProgram();
-//	glAttachShader(program_checked, vertexShader);
-//	glAttachShader(program_checked, fragmentCheckedShader);
-//	glLinkProgram(program_checked);
-//	um4mvp_checked = glGetUniformLocation(program_checked, "um4mvp");
-//	m_time_checked = glGetUniformLocation(program_checked, "time");
-//	programs[1] = program_checked;
-//
-//	GLuint vao;
-//	glGenVertexArrays(1, &vao);
-//	glBindVertexArray(vao);
-//
-//	float data[9] = {
-//		-0.5f, -0.4f, 0.0f,
-//		0.5f, -0.4f, 0.0f,
-//		0.0f,  0.6f, 0.0f
-//	};
-//	GLuint buffer;
-//	glGenBuffers(1, &buffer);
-//	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-//	glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
-//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-//	glEnableVertexAttribArray(0);
+
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+
+	//GLuint buffer;
+	//glGenBuffers(1, &buffer);
+	//glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glEnableVertexAttribArray(0);
 }
 //
 //// GLUT callback. Called to draw the scene.
@@ -115,7 +98,7 @@ void My_Reshape(int width, int height)
 	mvp = ortho(-1 * viewportAspect, 1 * viewportAspect, -1.0f, 1.0f);
 	mvp = mvp * lookAt(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 
-	glUniform2f(screen_center_circular, (float)width / 2, (float)height / 2);
+	//glUniform2f(screen_center_circular, (float)width / 2, (float)height / 2);
 }
 
 //void My_Timer(int val)
@@ -191,7 +174,7 @@ int main(int argc, char* argv[])
 #ifdef _MSC_VER
 	glewInit();
 #endif
-	dumpInfo();
+	printGLContextInfo();
 
 	My_Init();
 
@@ -204,7 +187,7 @@ int main(int argc, char* argv[])
 //	glutSpecialFunc(My_SpecialKeys);
 //	glutTimerFunc(timer_speed, My_Timer, 0);
 //	///////////////////////////////
-//
+
 
 	glutMainLoop();
 
