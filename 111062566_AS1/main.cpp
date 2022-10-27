@@ -11,12 +11,17 @@ using namespace glm;
 mat4 mvp(1.0f);
 mat4 model(1.0f), view(1.0f), projection(1.0f);
 
-//GLuint um4mvp_circular;
+const GLuint um4mvp_loc = 0;
 //GLuint m_time_circular;
-
 GLuint program;
 
 //GLuint programs[2];
+
+vec3 translateBody(0, 0, 0);
+float rotateBodyAng = 0.0f;
+
+
+std::vector<MeshData> bodyCube;
 
 char** loadShaderSource(const char* file)
 {
@@ -68,26 +73,37 @@ void My_Init()
 //	m_time_circular = glGetUniformLocation(program_circular, "time");
 //	screen_center_circular = glGetUniformLocation(program_circular, "screenCenter");
 	glUseProgram(program);
-//	programs[0] = program_circular;
 
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
+	bodyCube = loadObj("../Objects/Cube.obj");
 
-	//GLuint buffer;
-	//glGenBuffers(1, &buffer);
-	//glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	//glEnableVertexAttribArray(0);
+	GLuint buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, bodyCube[0].positions.size() * sizeof(float),
+		bodyCube[0].positions.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
 }
-//
-//// GLUT callback. Called to draw the scene.
+
+// GLUT callback. Called to draw the scene.
 void My_Display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	mat4 T(1.0), R(1.0);
+
+	T = translate(T, translateBody);
+	R = rotate(R, rotateBodyAng, vec3(0, 1, 0));
+
+	mvp = projection * view * R * T * model;
+	glUniformMatrix4fv(um4mvp_loc, 1, GL_FALSE, value_ptr(mvp));
+
+	glDrawArrays(GL_TRIANGLES, 0, bodyCube[0].positions.size() / 3);
+
 	glutSwapBuffers();
 }
 
@@ -95,10 +111,14 @@ void My_Reshape(int width, int height)
 {
 	glViewport(0, 0, width, height);
 	float viewportAspect = (float)width / (float)height;
-	mvp = ortho(-1 * viewportAspect, 1 * viewportAspect, -1.0f, 1.0f);
-	mvp = mvp * lookAt(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 
-	//glUniform2f(screen_center_circular, (float)width / 2, (float)height / 2);
+	// perspective(fov, aspect_ratio, near_plane_distance, far_plane_distance)
+	// ps. fov = field of view, it represent how much range(degree) is this camera could see 
+	projection = perspective(radians(60.0f), viewportAspect, 0.1f, 1000.0f);
+
+	// lookAt(camera_position, camera_viewing_vector, up_vector)
+	// up_vector represent the vector which define the direction of 'up'
+	view = lookAt(vec3(0.0f, 0.0f, 5.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
 }
 
 //void My_Timer(int val)
@@ -110,7 +130,7 @@ void My_Reshape(int width, int height)
 //		glutTimerFunc(timer_speed, My_Timer, val);
 //	}
 //}
-//
+
 //void My_Mouse(int button, int state, int x, int y)
 //{
 //	if (state == GLUT_DOWN)
@@ -122,38 +142,44 @@ void My_Reshape(int width, int height)
 //		printf("Mouse %d is released at (%d, %d)\n", button, x, y);
 //	}
 //}
-//
-//void My_Keyboard(unsigned char key, int x, int y)
-//{
-//	printf("Key %c is pressed at (%d, %d)\n", key, x, y);
-//}
-//
-//void My_SpecialKeys(int key, int x, int y)
-//{
-//	switch (key)
-//	{
-//	case GLUT_KEY_F1:
-//		printf("F1 is pressed at (%d, %d)\n", x, y);
-//		break;
-//	case GLUT_KEY_PAGE_UP:
-//		printf("Page up is pressed at (%d, %d)\n", x, y);
-//		break;
-//		//TODO:
-//		//New 2 cases for switch the different fragment shader using LEFT/RIGHT arrow key
-//		/////////////////////////////
-//
-//	case GLUT_KEY_LEFT:
-//	case GLUT_KEY_RIGHT:
-//		program_idx = (program_idx + 1) % 2;
-//		glUseProgram(programs[program_idx]);
-//		break;
-//
-//		/////////////////////////////
-//	default:
-//		printf("Other special key is pressed at (%d, %d)\n", x, y);
-//		break;
-//	}
-//}
+
+void My_Keyboard(unsigned char key, int x, int y)
+{
+	printf("Key %c is pressed at (%d, %d)\n", key, x, y);
+}
+
+void My_SpecialKeys(int key, int x, int y)
+{
+	switch (key)
+	{
+	case GLUT_KEY_LEFT:
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			printf("rotating counter-clockwise\n");
+			rotateBodyAng += 10;
+		}
+		else {
+			printf("moving left\n");
+			translateBody += vec3(-1, 0, 0);
+		}
+		break;
+	case GLUT_KEY_RIGHT:
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			printf("rotating clockwise\n");
+			rotateBodyAng -= 10;
+		}
+		else {
+			printf("moving right\n");
+			translateBody += vec3(1, 0, 0);
+		}
+		break;
+
+		/////////////////////////////
+	default:
+		printf("Other special key is pressed at (%d, %d)\n", x, y);
+		break;
+	}
+	glutPostRedisplay();
+}
 
 int main(int argc, char* argv[])
 {
@@ -183,8 +209,8 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(My_Display);
 	glutReshapeFunc(My_Reshape);
 //	glutMouseFunc(My_Mouse);
-//	glutKeyboardFunc(My_Keyboard);
-//	glutSpecialFunc(My_SpecialKeys);
+	glutKeyboardFunc(My_Keyboard);
+	glutSpecialFunc(My_SpecialKeys);
 //	glutTimerFunc(timer_speed, My_Timer, 0);
 //	///////////////////////////////
 

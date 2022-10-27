@@ -1,8 +1,8 @@
-#version 410 core
+#version 430 core
 
 layout(location = 0) in vec3 iv3vertex;
 
-uniform mat4 um4mvp;
+layout(location = 0) uniform mat4 um4mvp;
 
 void main()
 {
