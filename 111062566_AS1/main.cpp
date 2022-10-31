@@ -8,7 +8,6 @@ using namespace glm;
 
 //int program_idx = 0;
 
-mat4 mvp(1.0f);
 mat4 model(1.0f), view(1.0f), projection(1.0f);
 
 const GLuint um4mvp_loc = 0;
@@ -23,7 +22,7 @@ struct Model {
 	Shape shape;
 	GLuint vao;
 	GLuint buffer;
-	Model* parent = nullptr;
+	int parent;
 
 	vec3 position;
 	vec3 rotation;
@@ -31,7 +30,7 @@ struct Model {
 
 	mat4 localModelMat;
 
-	Model(Shape s, Model* p = nullptr) : shape(s), parent(p), 
+	Model(Shape s, int p = -1) : shape(s), parent(p), 
 		position(vec3(0)), rotation(vec3(0)), scale(vec3(1)) {}
 };
 
@@ -74,13 +73,78 @@ void bindArrayAndBuffers(Model& m)
 
 void buildRobot()
 {
+	// torso
 	robots.emplace_back(loadObj("../Objects/Cube.obj"));
 	bindArrayAndBuffers(robots.back());
-	robots.back().scale = vec3(1, 2, 1);
+	robots.back().scale = vec3(2, 2, 1);
 	
-	robots.emplace_back(loadObj("../Objects/Sphere.obj"), &robots.at(0));
+	// head
+	robots.emplace_back(loadObj("../Objects/Sphere.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0, 2, 0);
+	robots.back().position = vec3(0, 1.7, 0);
+
+	// L1 arm
+	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), 0);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(-1.5, 0.5, 0);
+	robots.back().rotation = vec3(0, 0, radians(-30.0f));
+	robots.back().scale = vec3(0.5, 0.5, 0.5);
+
+	// L2 arm
+	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), robots.size() - 1);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0, -1.2, 0);
+	robots.back().scale = vec3(0.5, 0.5, 0.5);
+
+	// R1 arm
+	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), 0);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(1.5, 0.5, 0);
+	robots.back().rotation = vec3(0, 0, radians(30.0f));
+	robots.back().scale = vec3(0.5, 0.5, 0.5);
+
+	// R2 arm
+	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), robots.size() - 1);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0, -1.2, 0);
+	robots.back().scale = vec3(0.5, 0.5, 0.5);
+
+	// L1 leg
+	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(-0.5, -1.8, 0);
+	robots.back().scale = vec3(0.8, 1, 0.8);
+
+	// L2 leg
+	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0, -1.2, 0);
+	robots.back().scale = vec3(0.8, 1, 0.8);
+
+	// L foot
+	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(-0.2, -0.8, 0);
+	robots.back().scale = vec3(1.2, 0.2, 0.8);
+
+	// R1 leg
+	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0.5, -1.8, 0);
+	robots.back().scale = vec3(0.8, 1, 0.8);
+
+	// R2 leg
+	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0, -1.2, 0);
+	robots.back().scale = vec3(0.8, 1, 0.8);
+
+	// R foot
+	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0.2, -0.8, 0);
+	robots.back().scale = vec3(1.2, 0.2, 0.8);
+
 
 }
 
@@ -119,19 +183,22 @@ void My_Display()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	for (Model &m : robots) {
-		printf("set %d\n", m.vao);
 		glBindVertexArray(m.vao);
 
 		mat4 T(1.0), R(1.0), S(1.0);
 
-		S = scale(S, m.scale);
 		T = translate(T, m.position);
-		R = rotate(R, m.rotation.y, vec3(0, 1, 0));
+		R = mat4_cast(quat(m.rotation));
+		S = scale(S, m.scale);
 
-		mvp = projection * view * T * R * S * model;
+		m.localModelMat = T * R;
+
+		if (m.parent != -1) {
+			m.localModelMat = robots.at(m.parent).localModelMat * m.localModelMat;
+		}
+		mat4 mvp = projection * view * m.localModelMat * S * model;
 		glUniformMatrix4fv(um4mvp_loc, 1, GL_FALSE, value_ptr(mvp));
 
-		printf("draw %d\n", m.vao);
 		glBindVertexArray(m.vao);
 		glDrawArrays(GL_TRIANGLES, 0, m.shape[0].positions.size() / 3);
 	}
@@ -187,30 +254,42 @@ void My_SpecialKeys(int key, int x, int y)
 	case GLUT_KEY_LEFT:
 		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
 			printf("rotating counter-clockwise\n");
-			//rotateBodyAng += 10;
+			robots.at(0).rotation.y += radians(5.0f);
 		}
 		else {
 			printf("moving left\n");
-			//translateBody += vec3(-0.5, 0, 0);
+			robots.at(0).position += vec3(-0.5, 0, 0);
 		}
 		break;
 	case GLUT_KEY_RIGHT:
 		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
 			printf("rotating clockwise\n");
-			//rotateBodyAng -= 10;
+			robots.at(0).rotation.y -= radians(5.0f);
 		}
 		else {
 			printf("moving right\n");
-			//translateBody += vec3(0.5, 0, 0);
+			robots.at(0).position += vec3(0.5, 0, 0);
 		}
 		break;
 	case GLUT_KEY_UP:
-		printf("moving up\n");
-		//translateBody += vec3(0, 0.5, 0);
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			printf("rotating counter-clockwise\n");
+			robots.at(0).rotation.x -= radians(5.0f);
+		}
+		else {
+			printf("moving up\n");
+			robots.at(0).position += vec3(0, 0.5, 0);
+		}
 		break;
 	case GLUT_KEY_DOWN:
-		printf("moving down\n");
-		//translateBody += vec3(0, -0.5, 0);
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			printf("rotating counter-clockwise\n");
+			robots.at(0).rotation.x += radians(5.0f);
+		}
+		else {
+			printf("moving down\n");
+			robots.at(0).position += vec3(0, -0.5, 0);
+		}
 		break;
 	default:
 		printf("Other special key is pressed at (%d, %d)\n", x, y);
