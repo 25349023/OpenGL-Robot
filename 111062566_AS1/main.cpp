@@ -17,11 +17,25 @@ GLuint program;
 
 //GLuint programs[2];
 
-vec3 translateBody(0, 0, 0);
-float rotateBodyAng = 0.0f;
+using Shape = std::vector<MeshData>;
 
+struct Model {
+	Shape shape;
+	GLuint vao;
+	GLuint buffer;
+	Model* parent = nullptr;
 
-std::vector<MeshData> bodyCube;
+	vec3 position;
+	vec3 rotation;
+	vec3 scale;
+
+	mat4 localModelMat;
+
+	Model(Shape s, Model* p = nullptr) : shape(s), parent(p), 
+		position(vec3(0)), rotation(vec3(0)), scale(vec3(1)) {}
+};
+
+std::vector<Model> robots;
 
 char** loadShaderSource(const char* file)
 {
@@ -43,6 +57,31 @@ void freeShaderSource(char** srcp)
 {
 	delete srcp[0];
 	delete srcp;
+}
+
+void bindArrayAndBuffers(Model& m)
+{
+	glGenVertexArrays(1, &m.vao);
+	glBindVertexArray(m.vao);
+
+	glGenBuffers(1, &m.buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m.buffer);
+	glBufferData(GL_ARRAY_BUFFER, m.shape[0].positions.size() * sizeof(float),
+		m.shape[0].positions.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+}
+
+void buildRobot()
+{
+	robots.emplace_back(loadObj("../Objects/Cube.obj"));
+	bindArrayAndBuffers(robots.back());
+	robots.back().scale = vec3(1, 2, 1);
+	
+	robots.emplace_back(loadObj("../Objects/Sphere.obj"), &robots.at(0));
+	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0, 2, 0);
+
 }
 
 void My_Init()
@@ -69,24 +108,9 @@ void My_Init()
 	glAttachShader(program, vertexShader);
 	glAttachShader(program, fragmentShader);
 	glLinkProgram(program);
-//	um4mvp_circular = glGetUniformLocation(program_circular, "um4mvp");
-//	m_time_circular = glGetUniformLocation(program_circular, "time");
-//	screen_center_circular = glGetUniformLocation(program_circular, "screenCenter");
 	glUseProgram(program);
 
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	bodyCube = loadObj("../Objects/Cube.obj");
-
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, bodyCube[0].positions.size() * sizeof(float),
-		bodyCube[0].positions.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
+	buildRobot();
 }
 
 // GLUT callback. Called to draw the scene.
@@ -94,15 +118,23 @@ void My_Display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	mat4 T(1.0), R(1.0);
+	for (Model &m : robots) {
+		printf("set %d\n", m.vao);
+		glBindVertexArray(m.vao);
 
-	T = translate(T, translateBody);
-	R = rotate(R, rotateBodyAng, vec3(0, 1, 0));
+		mat4 T(1.0), R(1.0), S(1.0);
 
-	mvp = projection * view * R * T * model;
-	glUniformMatrix4fv(um4mvp_loc, 1, GL_FALSE, value_ptr(mvp));
+		S = scale(S, m.scale);
+		T = translate(T, m.position);
+		R = rotate(R, m.rotation.y, vec3(0, 1, 0));
 
-	glDrawArrays(GL_TRIANGLES, 0, bodyCube[0].positions.size() / 3);
+		mvp = projection * view * T * R * S * model;
+		glUniformMatrix4fv(um4mvp_loc, 1, GL_FALSE, value_ptr(mvp));
+
+		printf("draw %d\n", m.vao);
+		glBindVertexArray(m.vao);
+		glDrawArrays(GL_TRIANGLES, 0, m.shape[0].positions.size() / 3);
+	}
 
 	glutSwapBuffers();
 }
@@ -155,25 +187,31 @@ void My_SpecialKeys(int key, int x, int y)
 	case GLUT_KEY_LEFT:
 		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
 			printf("rotating counter-clockwise\n");
-			rotateBodyAng += 10;
+			//rotateBodyAng += 10;
 		}
 		else {
 			printf("moving left\n");
-			translateBody += vec3(-1, 0, 0);
+			//translateBody += vec3(-0.5, 0, 0);
 		}
 		break;
 	case GLUT_KEY_RIGHT:
 		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
 			printf("rotating clockwise\n");
-			rotateBodyAng -= 10;
+			//rotateBodyAng -= 10;
 		}
 		else {
 			printf("moving right\n");
-			translateBody += vec3(1, 0, 0);
+			//translateBody += vec3(0.5, 0, 0);
 		}
 		break;
-
-		/////////////////////////////
+	case GLUT_KEY_UP:
+		printf("moving up\n");
+		//translateBody += vec3(0, 0.5, 0);
+		break;
+	case GLUT_KEY_DOWN:
+		printf("moving down\n");
+		//translateBody += vec3(0, -0.5, 0);
+		break;
 	default:
 		printf("Other special key is pressed at (%d, %d)\n", x, y);
 		break;
