@@ -2,19 +2,18 @@
 
 using namespace glm;
 
-//GLubyte timer_cnt = 0;
-//bool timer_enabled = true;
-//unsigned int timer_speed = 16;
 
-//int program_idx = 0;
 
 mat4 model(1.0f), view(1.0f), projection(1.0f);
-
 const GLuint um4mvp_loc = 0;
-//GLuint m_time_circular;
-GLuint program;
 
+GLuint program;
+//int program_idx = 0;
 //GLuint programs[2];
+
+int timerCnt = 0;
+//bool timer_enabled = true;
+unsigned int timer_speed = 16;
 bool playAnimation = false;
 
 using Shape = std::vector<MeshData>;
@@ -78,17 +77,17 @@ void buildRobot()
 	robots.emplace_back(loadObj("../Objects/Cube.obj"));
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0, 1, -5);
-	robots.back().scale = vec3(2, 2, 1);
+	robots.back().scale = vec3(2, 3, 1);
 	
 	// head
 	robots.emplace_back(loadObj("../Objects/Sphere.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0, 1.7, 0);
+	robots.back().position = vec3(0, 2.2, 0);
 
 	// L1 arm
 	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(-1.5, 0.5, 0);
+	robots.back().position = vec3(-1.5, 1, 0);
 	robots.back().rotation = vec3(0, 0, radians(-30.0f));
 	robots.back().scale = vec3(0.5, 0.5, 0.5);
 
@@ -101,7 +100,7 @@ void buildRobot()
 	// R1 arm
 	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(1.5, 0.5, 0);
+	robots.back().position = vec3(1.5, 1, 0);
 	robots.back().rotation = vec3(0, 0, radians(30.0f));
 	robots.back().scale = vec3(0.5, 0.5, 0.5);
 
@@ -114,7 +113,7 @@ void buildRobot()
 	// L1 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(-0.5, -1.7, 0);
+	robots.back().position = vec3(-0.5, -2.2, 0);
 	robots.back().scale = vec3(0.8, 1, 0.8);
 
 	// L2 leg
@@ -132,7 +131,7 @@ void buildRobot()
 	// R1 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0.5, -1.7, 0);
+	robots.back().position = vec3(0.5, -2.2, 0);
 	robots.back().scale = vec3(0.8, 1, 0.8);
 
 	// R2 leg
@@ -146,8 +145,6 @@ void buildRobot()
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0.2, -1, 0);
 	robots.back().scale = vec3(1.2, 0.2, 0.8);
-
-
 }
 
 void My_Init()
@@ -222,15 +219,25 @@ void My_Reshape(int width, int height)
 	view = lookAt(vec3(0.0f, 0.0f, 5.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
 }
 
-//void My_Timer(int val)
-//{
-//	timer_cnt++;
-//	glutPostRedisplay();
-//	if (timer_enabled)
-//	{
-//		glutTimerFunc(timer_speed, My_Timer, val);
-//	}
-//}
+void updateAnimation() {
+	// torso
+	robots.at(0).rotation.z = sinf(4 * radians((float) timerCnt)) / 3;
+	//printf("%f\n", robots.at(0).rotation.z);
+
+
+}
+
+void My_Timer(int val)
+{
+	if (playAnimation)
+	{
+		timerCnt = (timerCnt + 1) % 360;
+		updateAnimation();
+
+		glutPostRedisplay();
+	}
+	glutTimerFunc(timer_speed, My_Timer, val);
+}
 
 //void My_Mouse(int button, int state, int x, int y)
 //{
@@ -317,6 +324,9 @@ void My_Menu(int action) {
 	case 2:
 		playAnimation = false;
 		break;
+	case 3:
+		timerCnt = 0;
+		break;
 	default:
 		break;
 	}
@@ -349,6 +359,7 @@ int main(int argc, char* argv[])
 	int menu_id = glutCreateMenu(My_Menu);
 	glutAddMenuEntry("Play Animation", 1);
 	glutAddMenuEntry("Stop Animation", 2);
+	glutAddMenuEntry("Reset Animation", 3);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
 	glutDisplayFunc(My_Display);
@@ -356,7 +367,7 @@ int main(int argc, char* argv[])
 //	glutMouseFunc(My_Mouse);
 	glutKeyboardFunc(My_Keyboard);
 	glutSpecialFunc(My_SpecialKeys);
-//	glutTimerFunc(timer_speed, My_Timer, 0);
+	glutTimerFunc(timer_speed, My_Timer, 0);
 
 	glutMainLoop();
 
