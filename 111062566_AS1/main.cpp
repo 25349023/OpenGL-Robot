@@ -15,6 +15,7 @@ const GLuint um4mvp_loc = 0;
 GLuint program;
 
 //GLuint programs[2];
+bool playAnimation = false;
 
 using Shape = std::vector<MeshData>;
 
@@ -245,58 +246,80 @@ void My_Reshape(int width, int height)
 
 void My_Keyboard(unsigned char key, int x, int y)
 {
-	printf("Key %c is pressed at (%d, %d)\n", key, x, y);
+	switch (key)
+	{
+	case 'a': case 'A':
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			robots.at(0).rotation.y += radians(5.0f);
+		}
+		else {
+			robots.at(0).position += vec3(-0.5, 0, 0);
+		}
+		break;
+	case 'd':case 'D':
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			robots.at(0).rotation.y -= radians(5.0f);
+		}
+		else {
+			robots.at(0).position += vec3(0.5, 0, 0);
+		}
+		break;
+	case 'w':case 'W':
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			robots.at(0).rotation.x -= radians(5.0f);
+		}
+		else {
+			robots.at(0).position += vec3(0, 0.5, 0);
+		}
+		break;
+	case 's': case 'S':
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			robots.at(0).rotation.x += radians(5.0f);
+		}
+		else {
+			robots.at(0).position += vec3(0, -0.5, 0);
+		}
+		break;
+	case 'q':case 'Q':
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			robots.at(0).rotation.z += radians(5.0f);
+		}
+		else {
+			robots.at(0).position += vec3(0, 0, -0.5);
+		}
+		break;
+	case 'e': case 'E':
+		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+			robots.at(0).rotation.z -= radians(5.0f);
+		}
+		else {
+			robots.at(0).position += vec3(0, 0, 0.5);
+		}
+		break;
+	default:
+		printf("Other key is pressed at (%d, %d)\n", x, y);
+		break;
+	}
+	glutPostRedisplay();
 }
 
 void My_SpecialKeys(int key, int x, int y)
 {
-	switch (key)
+
+}
+
+void My_Menu(int action) {
+	switch (action)
 	{
-	case GLUT_KEY_LEFT:
-		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
-			printf("rotating counter-clockwise\n");
-			robots.at(0).rotation.y += radians(5.0f);
-		}
-		else {
-			printf("moving left\n");
-			robots.at(0).position += vec3(-0.5, 0, 0);
-		}
+	case 1:
+		playAnimation = true;
 		break;
-	case GLUT_KEY_RIGHT:
-		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
-			printf("rotating clockwise\n");
-			robots.at(0).rotation.y -= radians(5.0f);
-		}
-		else {
-			printf("moving right\n");
-			robots.at(0).position += vec3(0.5, 0, 0);
-		}
-		break;
-	case GLUT_KEY_UP:
-		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
-			printf("rotating counter-clockwise\n");
-			robots.at(0).rotation.x -= radians(5.0f);
-		}
-		else {
-			printf("moving up\n");
-			robots.at(0).position += vec3(0, 0.5, 0);
-		}
-		break;
-	case GLUT_KEY_DOWN:
-		if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
-			printf("rotating counter-clockwise\n");
-			robots.at(0).rotation.x += radians(5.0f);
-		}
-		else {
-			printf("moving down\n");
-			robots.at(0).position += vec3(0, -0.5, 0);
-		}
+	case 2:
+		playAnimation = false;
 		break;
 	default:
-		printf("Other special key is pressed at (%d, %d)\n", x, y);
 		break;
 	}
-	glutPostRedisplay();
 }
 
 int main(int argc, char* argv[])
@@ -322,16 +345,18 @@ int main(int argc, char* argv[])
 
 	My_Init();
 
-//	// Register GLUT callback functions.
-//	///////////////////////////////
+
+	int menu_id = glutCreateMenu(My_Menu);
+	glutAddMenuEntry("Play Animation", 1);
+	glutAddMenuEntry("Stop Animation", 2);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+
 	glutDisplayFunc(My_Display);
 	glutReshapeFunc(My_Reshape);
 //	glutMouseFunc(My_Mouse);
 	glutKeyboardFunc(My_Keyboard);
 	glutSpecialFunc(My_SpecialKeys);
 //	glutTimerFunc(timer_speed, My_Timer, 0);
-//	///////////////////////////////
-
 
 	glutMainLoop();
 
