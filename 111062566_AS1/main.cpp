@@ -76,6 +76,7 @@ void buildRobot()
 	// torso
 	robots.emplace_back(loadObj("../Objects/Cube.obj"));
 	bindArrayAndBuffers(robots.back());
+	robots.back().position = vec3(0, 1, -5);
 	robots.back().scale = vec3(2, 2, 1);
 	
 	// head
@@ -112,37 +113,37 @@ void buildRobot()
 	// L1 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(-0.5, -1.8, 0);
+	robots.back().position = vec3(-0.5, -1.7, 0);
 	robots.back().scale = vec3(0.8, 1, 0.8);
 
 	// L2 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0, -1.2, 0);
-	robots.back().scale = vec3(0.8, 1, 0.8);
+	robots.back().position = vec3(0, -1.3, 0);
+	robots.back().scale = vec3(0.8, 1.2, 0.8);
 
 	// L foot
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(-0.2, -0.8, 0);
+	robots.back().position = vec3(-0.2, -1, 0);
 	robots.back().scale = vec3(1.2, 0.2, 0.8);
 
 	// R1 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0.5, -1.8, 0);
+	robots.back().position = vec3(0.5, -1.7, 0);
 	robots.back().scale = vec3(0.8, 1, 0.8);
 
 	// R2 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0, -1.2, 0);
-	robots.back().scale = vec3(0.8, 1, 0.8);
+	robots.back().position = vec3(0, -1.3, 0);
+	robots.back().scale = vec3(0.8, 1.2, 0.8);
 
 	// R foot
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0.2, -0.8, 0);
+	robots.back().position = vec3(0.2, -1, 0);
 	robots.back().scale = vec3(1.2, 0.2, 0.8);
 
 
