@@ -2,10 +2,9 @@
 
 using namespace glm;
 
-
-
 mat4 model(1.0f), view(1.0f), projection(1.0f);
 const GLuint um4mvp_loc = 0;
+const GLuint tex_sampler_loc = 1;
 
 GLuint program;
 //int program_idx = 0;
@@ -14,7 +13,9 @@ GLuint program;
 int timerCnt = 0;
 //bool timer_enabled = true;
 unsigned int timer_speed = 16;
-bool playAnimation = true;
+bool playAnimation = false;
+
+GLuint texture;
 
 using Shape = std::vector<MeshData>;
 
@@ -22,6 +23,7 @@ struct Model {
 	Shape shape;
 	GLuint vao;
 	GLuint buffer;
+	GLuint textureBuffer;
 	int parent;
 
 	vec3 position;
@@ -70,6 +72,13 @@ void bindArrayAndBuffers(Model& m)
 		m.shape[0].positions.data(), GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
+
+	glGenBuffers(1, &m.textureBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m.textureBuffer);
+	glBufferData(GL_ARRAY_BUFFER, m.shape[0].texcoords.size() * sizeof(float),
+		m.shape[0].texcoords.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
 }
 
 void buildRobot()
@@ -159,6 +168,21 @@ void buildRobot()
 	robots.back().anchor = vec3(-0.4, 0, 0);
 }
 
+void initTexture() {
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 512, 256);
+
+	TextureData tex = loadImg("../Textures/brick.png");
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 
+		tex.width, tex.height, GL_RGBA, GL_UNSIGNED_BYTE, tex.data);
+
+	glUniform1i(tex_sampler_loc, 0);
+	printf("init texture finished\n");
+}
+
 void My_Init()
 {
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -186,6 +210,8 @@ void My_Init()
 	glUseProgram(program);
 
 	buildRobot();
+
+	initTexture();
 }
 
 mat4 rotateAroundAnchor(mat4 R, vec3 anchor) {
@@ -220,7 +246,6 @@ void My_Display()
 		mat4 mvp = projection * view * m.localModelMat * S * model;
 		glUniformMatrix4fv(um4mvp_loc, 1, GL_FALSE, value_ptr(mvp));
 
-		glBindVertexArray(m.vao);
 		glDrawArrays(GL_TRIANGLES, 0, m.shape[0].positions.size() / 3);
 	}
 
@@ -249,6 +274,9 @@ void updateAnimation() {
 	// torso
 	robots.at(0).rotation.x = abs(cosf(3 * radians((float) timerCnt)) / 8);
 	robots.at(0).rotation.z = sinf(3 * radians((float) timerCnt)) / 8;
+
+	// head
+	robots.at(1).rotation.y = sinf(4 * radians((float) timerCnt)) * 3;
 
 	if (divideTimer <= 52 || divideTimer >= 82) {
 
