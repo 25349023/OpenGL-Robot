@@ -14,7 +14,7 @@ GLuint program;
 int timerCnt = 0;
 //bool timer_enabled = true;
 unsigned int timer_speed = 16;
-bool playAnimation = false;
+bool playAnimation = true;
 
 using Shape = std::vector<MeshData>;
 
@@ -27,11 +27,12 @@ struct Model {
 	vec3 position;
 	vec3 rotation;
 	vec3 scale;
+	vec3 anchor;
 
 	mat4 localModelMat;
 
 	Model(Shape s, int p = -1) : shape(s), parent(p), 
-		position(vec3(0)), rotation(vec3(0)), scale(vec3(1)) {}
+		position(vec3(0)), rotation(vec3(0)), scale(vec3(1)), anchor(vec3(0)) {}
 };
 
 std::vector<Model> robots;
@@ -78,6 +79,7 @@ void buildRobot()
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0, 1, -5);
 	robots.back().scale = vec3(2, 3, 1);
+	robots.back().anchor = vec3(0, 1.5, 0);
 	
 	// head
 	robots.emplace_back(loadObj("../Objects/Sphere.obj"), 0);
@@ -87,64 +89,74 @@ void buildRobot()
 	// L1 arm
 	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(-1.5, 1, 0);
-	robots.back().rotation = vec3(0, 0, radians(-30.0f));
-	robots.back().scale = vec3(0.5, 0.5, 0.5);
+	robots.back().position = vec3(-1.4, 0.8, 0);
+	robots.back().rotation = vec3(0, 0, radians(-15.0f));
+	robots.back().scale = vec3(0.5, 0.7, 0.5);
+	robots.back().anchor = vec3(0, 0.7, 0);
 
 	// L2 arm
 	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0, -1.2, 0);
-	robots.back().scale = vec3(0.5, 0.5, 0.5);
+	robots.back().position = vec3(0, -1.6, 0);
+	robots.back().scale = vec3(0.5, 0.7, 0.5);
+	robots.back().anchor = vec3(0, 0.7, 0);
 
 	// R1 arm
 	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), 0);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(1.5, 1, 0);
-	robots.back().rotation = vec3(0, 0, radians(30.0f));
-	robots.back().scale = vec3(0.5, 0.5, 0.5);
+	robots.back().position = vec3(1.4, 0.8, 0);
+	robots.back().rotation = vec3(0, 0, radians(15.0f));
+	robots.back().scale = vec3(0.5, 0.7, 0.5);
+	robots.back().anchor = vec3(0, 0.7, 0);
 
 	// R2 arm
 	robots.emplace_back(loadObj("../Objects/Cylinder.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
-	robots.back().position = vec3(0, -1.2, 0);
-	robots.back().scale = vec3(0.5, 0.5, 0.5);
+	robots.back().position = vec3(0, -1.6, 0);
+	robots.back().scale = vec3(0.5, 0.7, 0.5);
+	robots.back().anchor = vec3(0, 0.7, 0);
 
 	// L1 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(-0.5, -2.2, 0);
 	robots.back().scale = vec3(0.8, 1, 0.8);
+	robots.back().anchor = vec3(0, 0.5, 0);
 
 	// L2 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0, -1.3, 0);
 	robots.back().scale = vec3(0.8, 1.2, 0.8);
+	robots.back().anchor = vec3(0, 0.6, 0);
 
 	// L foot
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(-0.2, -1, 0);
 	robots.back().scale = vec3(1.2, 0.2, 0.8);
+	robots.back().anchor = vec3(0.4, 0, 0);
 
 	// R1 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), 0);
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0.5, -2.2, 0);
 	robots.back().scale = vec3(0.8, 1, 0.8);
+	robots.back().anchor = vec3(0, 0.5, 0);
 
 	// R2 leg
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0, -1.3, 0);
 	robots.back().scale = vec3(0.8, 1.2, 0.8);
+	robots.back().anchor = vec3(0, 0.6, 0);
 
 	// R foot
 	robots.emplace_back(loadObj("../Objects/Cube.obj"), robots.size() - 1);
 	bindArrayAndBuffers(robots.back());
 	robots.back().position = vec3(0.2, -1, 0);
 	robots.back().scale = vec3(1.2, 0.2, 0.8);
+	robots.back().anchor = vec3(-0.4, 0, 0);
 }
 
 void My_Init()
@@ -176,6 +188,13 @@ void My_Init()
 	buildRobot();
 }
 
+mat4 rotateAroundAnchor(mat4 R, vec3 anchor) {
+	mat4 T(1), T_inv(1);
+	T = translate(T, -anchor);
+	T_inv = translate(T_inv, anchor);
+	return T_inv * R * T;
+}
+
 // GLUT callback. Called to draw the scene.
 void My_Display()
 {
@@ -188,6 +207,9 @@ void My_Display()
 
 		T = translate(T, m.position);
 		R = mat4_cast(quat(m.rotation));
+		if (m.anchor != vec3(0)) {
+			R = rotateAroundAnchor(R, m.anchor);
+		}
 		S = scale(S, m.scale);
 
 		m.localModelMat = T * R;
@@ -220,11 +242,56 @@ void My_Reshape(int width, int height)
 }
 
 void updateAnimation() {
+	
+	int divideTimer = timerCnt % 90;
+	int round = timerCnt / 90;
+	
 	// torso
-	robots.at(0).rotation.z = sinf(4 * radians((float) timerCnt)) / 3;
-	//printf("%f\n", robots.at(0).rotation.z);
+	robots.at(0).rotation.x = abs(cosf(3 * radians((float) timerCnt)) / 8);
+	robots.at(0).rotation.z = sinf(3 * radians((float) timerCnt)) / 8;
 
+	if (divideTimer <= 52 || divideTimer >= 82) {
 
+		// L1 arm, R1 arm, L2 arm, R2 arm
+		robots.at(3).rotation.x = abs(cosf(6 * radians((float)timerCnt)) / 4) + radians(210.0f);
+		robots.at(5).rotation.x = radians(210.0f);
+
+		if (round % 2 == 0) {
+			robots.at(2).rotation.z = sinf(12 * radians((float)timerCnt)) / 4;
+			robots.at(4).rotation.z = sinf(12 * radians((float)timerCnt)) / 4;
+			robots.at(3).rotation.z = sinf(12 * radians((float)timerCnt)) / 2 - radians(30.0f);
+			robots.at(5).rotation.z = sinf(12 * radians((float)timerCnt)) / 2 - radians(30.0f);
+		}
+		else {
+			robots.at(2).rotation.z = -sinf(12 * radians((float)timerCnt)) / 4;
+			robots.at(4).rotation.z = -sinf(12 * radians((float)timerCnt)) / 4;
+			robots.at(3).rotation.z = -sinf(12 * radians((float)timerCnt)) / 2 + radians(30.0f);
+			robots.at(5).rotation.z = -sinf(12 * radians((float)timerCnt)) / 2 + radians(30.0f);
+		}
+
+		float legRotSpeed = 12;
+
+		if (round % 2 == 0) {
+			// L1 leg
+			robots.at(6).rotation.z = sinf(legRotSpeed * radians((float)timerCnt)) / 4;
+
+			// L2 leg
+			robots.at(7).rotation.z = -sinf(legRotSpeed * radians((float)timerCnt)) / 4;
+
+			// L foot
+			robots.at(8).rotation.y = cosf(legRotSpeed * radians((float)timerCnt)) / 2 + radians(45.0f);
+		}
+		else {
+			// R1 leg
+			robots.at(9).rotation.z = -sinf(legRotSpeed * radians((float)timerCnt)) / 4;
+
+			// R2 leg
+			robots.at(10).rotation.z = sinf(legRotSpeed * radians((float)timerCnt)) / 4;
+
+			// R foot
+			robots.at(11).rotation.y = cosf(legRotSpeed * radians((float)timerCnt)) / 2 - radians(20.0f);
+		}
+	}
 }
 
 void My_Timer(int val)
@@ -326,6 +393,8 @@ void My_Menu(int action) {
 		break;
 	case 3:
 		timerCnt = 0;
+		updateAnimation();
+		glutPostRedisplay();
 		break;
 	default:
 		break;
