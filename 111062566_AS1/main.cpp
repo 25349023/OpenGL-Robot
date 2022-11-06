@@ -7,11 +7,8 @@ const GLuint um4mvp_loc = 0;
 const GLuint tex_sampler_loc = 1;
 
 GLuint program;
-//int program_idx = 0;
-//GLuint programs[2];
 
 int timerCnt = 0;
-//bool timer_enabled = true;
 unsigned int timer_speed = 16;
 bool playAnimation = false;
 
@@ -343,18 +340,6 @@ void My_Timer(int val)
 	glutTimerFunc(timer_speed, My_Timer, val);
 }
 
-//void My_Mouse(int button, int state, int x, int y)
-//{
-//	if (state == GLUT_DOWN)
-//	{
-//		printf("Mouse %d is pressed at (%d, %d)\n", button, x, y);
-//	}
-//	else if (state == GLUT_UP)
-//	{
-//		printf("Mouse %d is released at (%d, %d)\n", button, x, y);
-//	}
-//}
-
 void My_Keyboard(unsigned char key, int x, int y)
 {
 	switch (key)
@@ -414,11 +399,6 @@ void My_Keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
-void My_SpecialKeys(int key, int x, int y)
-{
-
-}
-
 void My_Menu(int action) {
 	switch (action)
 	{
@@ -471,9 +451,7 @@ int main(int argc, char* argv[])
 
 	glutDisplayFunc(My_Display);
 	glutReshapeFunc(My_Reshape);
-//	glutMouseFunc(My_Mouse);
 	glutKeyboardFunc(My_Keyboard);
-	glutSpecialFunc(My_SpecialKeys);
 	glutTimerFunc(timer_speed, My_Timer, 0);
 
 	glutMainLoop();
