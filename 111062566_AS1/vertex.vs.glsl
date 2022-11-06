@@ -6,13 +6,11 @@ layout(location = 1) in vec2 texcoord;
 layout(location = 0) uniform mat4 um4mvp;
 
 out VS_OUT {
-	// vec3 vcolor;
 	vec2 texcoord;
 } vs_out;
 
 void main()
 {
 	gl_Position = um4mvp * vec4(iv3vertex, 1);
-	// vs_out.vcolor = 0.8 - iv3vertex;
 	vs_out.texcoord = texcoord;
 }
