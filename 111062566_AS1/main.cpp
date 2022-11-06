@@ -322,6 +322,15 @@ void updateAnimation() {
 	}
 }
 
+void resetAniamtion() {
+	for (Model& m : robots) {
+		m.rotation = vec3(0);
+	}
+
+	robots.at(2).rotation = vec3(0, 0, radians(-15.0f));
+	robots.at(4).rotation = vec3(0, 0, radians(15.0f));
+}
+
 void My_Timer(int val)
 {
 	if (playAnimation)
@@ -420,8 +429,9 @@ void My_Menu(int action) {
 		playAnimation = false;
 		break;
 	case 3:
+		playAnimation = false;
 		timerCnt = 0;
-		updateAnimation();
+		resetAniamtion();
 		glutPostRedisplay();
 		break;
 	default:
@@ -455,7 +465,7 @@ int main(int argc, char* argv[])
 
 	int menu_id = glutCreateMenu(My_Menu);
 	glutAddMenuEntry("Play Animation", 1);
-	glutAddMenuEntry("Stop Animation", 2);
+	glutAddMenuEntry("Pause Animation", 2);
 	glutAddMenuEntry("Reset Animation", 3);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
